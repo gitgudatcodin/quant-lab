@@ -305,6 +305,8 @@ def backtest_pair(data, a, b, beta, P):
                     "entryZ": _js_fixed(entry_z, 2), "exitZ": _js_fixed(zi, 2),
                     "days": hold,
                     "retPct": _js_fixed((v / entry_v - 1.0) * 100.0, 2),
+                    # unrounded return for win-rate classification (display uses retPct)
+                    "_ret_raw": (v / entry_v - 1.0),
                 })
                 pos = 0
         eq_d.append(dates[i])
@@ -359,7 +361,8 @@ def stats(equity, trades=None):
             peak = e["v"]
         if peak > 0:
             dd = min(dd, e["v"] / peak - 1.0)
-    wins = sum(1 for t in trades if t["retPct"] > 0)
+    # win rate on UNROUNDED returns (retPct is display-rounded to 2dp)
+    wins = sum(1 for t in trades if t.get("_ret_raw", t["retPct"]) > 0)
     return {"cagr": _js_fixed(cagr, 4), "sharpe": _js_fixed(sharpe, 2),
             "maxdd": _js_fixed(dd, 4),
             "win": _js_fixed(wins / len(trades), 3) if trades else 0,

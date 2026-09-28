@@ -234,11 +234,14 @@ def evaluate(dates, F, disc, agent, j0, j1, P):
         bh *= (1.0 + rets[t])
         eq.append((dates[t], equity))
         eq_bh.append((dates[t], bh))
-        # decide at close t (held into t+1); no new decision on the final day
-        a = 1  # flat
+        # decide at close t (held into t+1). On the final day there is no t+1,
+        # so hold the current position — no forced liquidation, matching the
+        # training episode which simply ends with the position held.
         if t < j1:
             s = disc.state(t, pos)
             a = greedy_action(agent, s, pos)
+        else:
+            a = {-1: 0, 0: 1, 1: 2}[pos]  # hold
         target = ACTIONS[a]
         change = abs(target - pos)
         if change > 0:

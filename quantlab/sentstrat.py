@@ -178,11 +178,15 @@ def run_backtest(DATA: Dict[str, Any], opts: Dict[str, Any]) -> Dict[str, Any]:
                 active.append({"ev": e, "side": e["side"], "lastW": 0.0})
             add_ptr += 1
         # exit at yesterday's close: events with ei+H === i-1 leave
+        # Q1: the exit cost must reduce the day's return, not just turnover.
+        # It is booked on the day the exit is processed (the economic exit day).
+        exit_dc = 0.0
         for k in range(len(active) - 1, -1, -1):
             a = active[k]
             if a["ev"]["ei"] + H == i - 1:
-                dc = cost * abs(a["lastW"])
-                cost_tot += dc
+                dcx = cost * abs(a["lastW"])
+                cost_tot += dcx
+                exit_dc += dcx
                 hret = a["side"] * (px[a["ev"]["t"]][a["ev"]["ei"] + H]
                                     / px[a["ev"]["t"]][a["ev"]["ei"]] - 1.0)
                 trades.append({
@@ -199,7 +203,7 @@ def run_backtest(DATA: Dict[str, Any], opts: Dict[str, Any]) -> Dict[str, Any]:
         tL = (1.0 if mode == "long" else 0.5) if longs else 0.0
         tS = 0.5 if (mode == "ls" and shorts) else 0.0
         dr = 0.0
-        dc = 0.0
+        dc = exit_dc
         for a in longs:
             w = tL / len(longs)
             a["lastW"] = w
